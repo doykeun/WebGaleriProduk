@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galeri Produk - jQuery</title>
+    <!-- jQuery CDN -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <style>
+        /* CSS Reset & Base */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f4f9; color: #333; line-height: 1.6; }
+
+        /* Header */
+        header { background: #2c3e50; color: #fff; padding: 2rem 0; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h1 { margin-bottom: 1rem; }
+        
+        /* Controls */
+        .controls { margin: 1.5rem 0; text-align: center; }
+        .btn {
+            padding: 10px 20px; border: none; background: #3498db; color: white; 
+            cursor: pointer; border-radius: 4px; margin: 0 5px; transition: background 0.3s;
+        }
+        .btn:hover { background: #2980b9; }
+        .btn.active { background: #1abc9c; }
+
+        /* Gallery Grid */
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        #gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        
+        /* Product Card */
+        .product-card {
+            background: white; border-radius: 8px; overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: relative;
+            display: flex; flex-direction: column;
+        }
+        .product-image { width: 100%; height: 200px; object-fit: cover; background: #eee; }
+        .product-info { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .product-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 5px; }
+        .product-price { color: #e74c3c; font-weight: bold; font-size: 1.2rem; }       
+        .product-desc { font-size: 0.9rem; color: #666; margin: 10px 0; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+        
+        /* Modal */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 500px;
+            position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .close-modal {
+            position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #aaa;
+        }
+        .close-modal:hover { color: #333; }
+
+        /* Tabs di dalam Modal */
+        .modal-tabs { display: flex; border-bottom: 2px solid #eee; margin-top: 15px; }
+        .tab-link {
+            padding: 10px 15px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; font-weight: bold; color: #777;
+        }
+        .tab-link.active { border-bottom: 2px solid #3498db; color: #3498db; }
+        .tab-content { display: none; padding: 15px 0; min-height: 80px; }
+        .tab-content.active { display: block; }
+
+        /* Scroll To Top Button */
+        #scrollTopBtn {
+            display: none; position: fixed; bottom: 20px; right: 30px; z-index: 99;
+            border: none; outline: none; background-color: #e74c3c; color: white;
+            cursor: pointer; padding: 15px; border-radius: 50%; font-size: 18px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2); transition: background-color 0.3s;
+        }
+        #scrollTopBtn:hover { background-color: #c0392b; }
+
+        /* Loading */
+        #loading { text-align: center; font-size: 1.2rem; color: #666; margin-top: 50px; }
+        
+        /* Footer */
+        footer { text-align: center; padding: 20px; margin-top: 40px; color: #777; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Galeri Produk</h1>
+        <p>Koleksi Terbaik untuk Anda</p>
+    </header>
+
+    <div class="container">
+        <!-- Manipulasi HTML & Event: Filter Buttons -->
+        <div class="controls">
+            <button class="btn active" data-filter="all">Semua</button>
+            <button class="btn" data-filter="beauty">Kecantikan</button>
+            <button class="btn" data-filter="fragrances">Parfum</button>
+            <button class="btn" data-filter="furniture">Perabotan</button>
+            <button class="btn" data-filter="groceries">Bahan makanan</button>
+        </div>
+
+        <div id="loading">Memuat produk...</div>
+        <div id="gallery">
+            <!-- Produk akan dimuat di sini menggunakan AJAX & DOM Manipulation -->
+        </div>
+    </div>
+
+    <footer>
+        &copy; 2025 Web Galeri Produk. Dibuat dengan jQuery.
+    </footer>
+
+    <!-- Scroll Content Button -->
+    <button id="scrollTopBtn" title="Kembali ke atas">&uarr;</button>
+
+    <!-- Modal Template (Akan dimanipulasi DOM-nya) -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="modalTitle">Judul Produk</h2>
+            <img id="modalImage" src="" alt="Detail" style="width:100%; height:250px; object-fit:contain; margin:10px 0;">
+            
+            <!-- Web Tab Interface -->
+            <div class="modal-tabs">
+                <div class="tab-link active" data-tab="desc">Deskripsi</div>
+                <div class="tab-link" data-tab="specs">Spesifikasi</div>
+            </div>
+            
+            <div id="tab-desc" class="tab-content active">
+                <p id="modalDesc">Deskripsi lengkap...</p>
+            </div>
+            <div id="tab-specs" class="tab-content">
+                <p>Kategori: <span id="modalCategory" style="font-weight:bold;">-</span></p>
+                <p>Stok: Tersedia</p>
+                <p>Pengiriman: 2-3 Hari Kerja</p>
+            </div>
+
+            <h3 id="modalPrice" style="color: #e74c3c; margin-top: 10px;">$0</h3>
+            <button class="btn" style="margin-top: 15px; width: 100%;" id="buyBtn">Beli Sekarang</button>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            const alamatApi = 'https://dummyjson.com/products?limit=20';
+
+            $.ajax({
+                url: alamatApi,
+                method: 'GET',
+                dataType: 'json',
+                success: function(respon) {
+                    $('#loading').fadeOut(300, function() {
+                        $(this).remove();
+                        tampilkanProduk(respon.products);
+                    });
+                },
+                error: function(gagal) {
+                    $('#loading').html('<span style="color:red">Gagal memuat data. Coba refresh halaman.</span>');
+                    console.error('Gagal mengambil data:', gagal);
+                }
+            });
+
+            function tampilkanProduk(daftarProduk) {
+                $.each(daftarProduk, function(indeks, produk) {
+                    const htmlProduk = `
+                        <div class="product-card" data-category="${produk.category}">
+                            <img src="${produk.thumbnail}" alt="${produk.title}" class="product-image">
+                            <div class="product-info">
+                                <div>
+                                    <div class="product-title">${produk.title}</div>
+                                    <div class="product-desc">${produk.description}</div>
+                                </div>
+                                <div style="margin-top:10px;">
+                                    <div class="product-price">$${produk.price}</div>
+                                    <button class="btn view-details" 
+                                        data-id="${produk.id}"
+                                        data-title="${produk.title}"
+                                        data-desc="${produk.description}"
+                                        data-img="${produk.thumbnail}"
+                                        data-price="${produk.price}"
+                                        style="width:100%; margin-top:10px; background:#2c3e50;">
+                                        Lihat Detail
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    const $kartu = $(htmlProduk).hide();
+                    $('#gallery').append($kartu);
+                    $kartu.delay(indeks * 100).fadeIn(500);
+                });
+            }
+
+            $('.controls .btn').on('click', function() {
+                $('.controls .btn').removeClass('active');
+                $(this).addClass('active');
+
+                const nilaiFilter = $(this).data('filter');
+
+                if (nilaiFilter === 'all') {
+                    $('.product-card').fadeIn();
+                } else {
+                    $('.product-card').not('[data-category="' + nilaiFilter + '"]').fadeOut(300);
+                    $('.product-card[data-category="' + nilaiFilter + '"]').delay(300).fadeIn(300);
+                }
+            });
+
+            $('#gallery').on('click', '.view-details', function() {
+                const judul = $(this).data('title');
+                const deskripsi = $(this).data('desc');
+                const gambar = $(this).data('img');
+                const harga = $(this).data('price');
+                const kategori = $(this).closest('.product-card').data('category');
+
+                $('#modalTitle').text(judul);
+                $('#modalDesc').text(deskripsi);
+                $('#modalImage').attr('src', gambar);
+                $('#modalPrice').text('$' + harga);
+                $('#modalCategory').text(kategori);
+
+                $('.tab-link').removeClass('active');
+                $('[data-tab="desc"]').addClass('active');
+                $('.tab-content').hide();
+                $('#tab-desc').show();
+
+                $('#productModal').hide().fadeIn(200, function() { $(this).css('display', 'flex'); });
+            });
+
+            $('.tab-link').on('click', function() {
+                const idTab = $(this).data('tab');
+                $('.tab-link').removeClass('active');
+                $(this).addClass('active');
+                $('.tab-content').hide();
+                $('#tab-' + idTab).fadeIn(300);
+            });
+
+            $(window).scroll(function() {
+                if ($(this).scrollTop() > 300) {
+                    $('#scrollTopBtn').fadeIn();
+                } else {
+                    $('#scrollTopBtn').fadeOut();
+                }
+            });
+
+            $('#scrollTopBtn').click(function() {
+                $('html, body').animate({scrollTop : 0}, 800);
+                return false;
+            });
+
+            $('.close-modal, .modal-overlay').on('click', function(e) {
+                if (e.target === this) {
+                    $('#productModal').fadeOut();
+                }
+            });
+
+            $('#gallery').on('mouseenter', '.product-card', function() {
+                $(this).stop().animate({ marginTop: '-10px' }, 200).css('box-shadow', '0 10px 20px rgba(0,0,0,0.1)');
+            }).on('mouseleave', '.product-card', function() {
+                $(this).stop().animate({ marginTop: '0px' }, 200).css('box-shadow', '0 2px 10px rgba(0,0,0,0.05)');
+            });
+        });
+    </script>
+</body>
+</html>
